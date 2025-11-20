@@ -197,12 +197,11 @@ logits = MLP(features)
 - `Rostlab/prot_bert_bfd` (best overall)
 - `facebook/esm2_t30_150M_UR50D`
 
-**Expected Performance:**
 
-| Model                  | Expected ROC-AUC  | Status                |
+| Model                  | ROC-AUC  | Status                |
 |------------------------|-------------------|-----------------------|
-| ProtBERT-BFD + LoRA    | 0.88–0.92        | Implementation ready* |
-| ESM-2 150M + LoRA      | 0.87–0.91        | Implementation ready* |
+| ProtBERT-BFD + LoRA    | -      | Implementation ready* |
+| ESM-2 150M + LoRA      | -       | Implementation ready* |
 
 \* **Note:** LoRA experiments were not run due to computational constraints. The implementation uses a bi-encoder architecture with proper protein-disjoint evaluation and is ready for execution on systems with sufficient GPU memory (16GB+ recommended).
 
@@ -329,10 +328,7 @@ The repository also includes a **production-ready LoRA fine-tuning implementatio
 
 ---
 
-## 📜 License
-
-MIT License
 
 ## 👤 Author
 
-Developed as part of a bioinformatics technical challenge for Converge.
+Gavriel David Hannuna - Developed as part of a bioinformatics technical challenge for Converge.

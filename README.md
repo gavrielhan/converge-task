@@ -59,6 +59,9 @@ We strictly enforce a **Protein-Disjoint Split**:
 ![Neural Variants](plot/model2_comparison.png)
 *Figure 2: Comparison of Neural Architectures (Model 2)*
 
+![Final Model Comparison](plot/final_model_comparison.png)
+*Figure 3: Best Model Comparison - Top performers from each category (Classical ML with ESM-2, Classical ML with Handcrafted features, Neural Networks, and LoRA fine-tuning) with error bars showing standard deviation across folds*
+
 ---
 
 ## 🛠️ Installation & Setup

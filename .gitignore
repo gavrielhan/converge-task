@@ -50,6 +50,7 @@ ENV/
 *.npy
 *.npz
 cache/
+checkpoints/
 *.fasta.bak
 
 # Results and outputs (optional - uncomment if you don't want to track results)

@@ -233,6 +233,14 @@ A script aggregates the top performers from Models 1, 2, and 3 and plots:
 python plot_final_comparison.py
 ```
 
+### 6. Generate Carpet Plot (Error Pattern Analysis)
+
+Creates a carpet plot showing prediction correctness for each test sample across all models and folds. Helps identify complementary errors and ensemble potential.
+
+```bash
+python plot_carpet.py
+```
+
 **Output:** `plot/final_model_comparison.png`
 
 ### Performance Comparison Plots
@@ -245,6 +253,20 @@ python plot_final_comparison.py
 
 ![Final Model Comparison](plot/final_model_comparison.png)
 *Figure 3: **Overall Best Model Comparison** - LightGBM on ESM-2 embeddings (0.8861 ± 0.0166) outperforms both handcrafted features and neural architectures. Error bars show standard deviation across 3 protein-disjoint folds.*
+
+### Carpet Plot Analysis
+
+![Carpet Plot](plot/carpet_plot.png)
+*Figure 4: **Carpet Plot** - Visualization of prediction correctness across models and folds. Each row is a test sample (grouped by fold), each column is a model. Green = correct prediction, Red = incorrect. Classical ML models (left 3 columns) show strong performance, while neural models (right 3 columns) show complementary error patterns.*
+
+![Model Agreement Matrix](plot/model_agreement.png)
+*Figure 5: **Model Agreement Matrix** - Pairwise agreement between models. Classical models agree strongly with each other (0.73-0.86), neural models agree among themselves (0.99), but low agreement between groups (0.37-0.58) suggests **complementary errors** and strong ensemble potential (+35.7% potential improvement).*
+
+**Key Insights:**
+- Only **9.7%** of test samples are correctly predicted by all models
+- Only **2.9%** of samples are incorrectly predicted by all models  
+- **97.1%** of samples are correctly predicted by at least one model
+- **Ensemble potential improvement: +35.7%** by combining classical and neural predictions
 
 ---
 

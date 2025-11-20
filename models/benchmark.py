@@ -76,6 +76,8 @@ CURATED_DATA_DIR = PROJECT_ROOT / "curated_data"
 RESULTS_PATH = PROJECT_ROOT / "model1_results.txt"
 PLOT_DIR = PROJECT_ROOT / "plot"
 PLOT_DIR.mkdir(exist_ok=True)
+CHECKPOINTS_DIR = PROJECT_ROOT / "checkpoints" / "model1"
+CHECKPOINTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def load_curated_data(fold_idx: int = None):
@@ -191,6 +193,8 @@ def train_and_evaluate(
     y_train: np.ndarray,
     y_test: np.ndarray,
     classifier_name: str,
+    fold_idx: int = None,
+    feature_type: str = "esm2",
 ) -> Dict:
     """
     Train a classifier and evaluate on test set.
@@ -201,6 +205,8 @@ def train_and_evaluate(
         y_train: Training labels
         y_test: Test labels
         classifier_name: Name of the classifier
+        fold_idx: Fold index for saving checkpoint
+        feature_type: Feature type ("esm2" or "handcrafted")
         
     Returns:
         Dictionary of evaluation metrics
@@ -214,6 +220,13 @@ def train_and_evaluate(
         return None
     
     clf.fit(X_train, y_train)
+    
+    # Save model checkpoint
+    if fold_idx is not None:
+        import joblib
+        checkpoint_path = CHECKPOINTS_DIR / f"fold_{fold_idx}_{feature_type}_{classifier_name}.pkl"
+        joblib.dump(clf, checkpoint_path)
+        print(f"  ✓ Saved checkpoint: {checkpoint_path.name}")
     
     # Predictions
     y_pred = clf.predict(X_test)
@@ -245,6 +258,7 @@ def train_all_classifiers(
     y_train: np.ndarray,
     y_test: np.ndarray,
     feature_type: str,
+    fold_idx: int = None,
 ) -> List[Dict]:
     """
     Train all available classifiers and return metrics.
@@ -255,6 +269,7 @@ def train_all_classifiers(
         y_train: Training labels
         y_test: Test labels
         feature_type: "ESM-2" or "Handcrafted"
+        fold_idx: Fold index for saving checkpoints
         
     Returns:
         List of metric dictionaries
@@ -268,8 +283,10 @@ def train_all_classifiers(
     
     all_metrics = []
     
+    feature_type_key = "esm2" if feature_type == "ESM-2" else "handcrafted"
+    
     for clf_name in classifiers:
-        metrics = train_and_evaluate(X_train, X_test, y_train, y_test, clf_name)
+        metrics = train_and_evaluate(X_train, X_test, y_train, y_test, clf_name, fold_idx, feature_type_key)
         if metrics:
             metrics['feature_type'] = feature_type
             all_metrics.append(metrics)
@@ -621,12 +638,12 @@ def main():
                 X_test_esm = data['X_test_esm']
                 
                 if args.classifier:
-                    metrics = train_and_evaluate(X_train_esm, X_test_esm, y_train, y_test, args.classifier)
+                    metrics = train_and_evaluate(X_train_esm, X_test_esm, y_train, y_test, args.classifier, fold_idx, "esm2")
                     if metrics:
                         metrics['feature_type'] = 'ESM-2'
                         fold_metrics.append(metrics)
                 else:
-                    esm_metrics = train_all_classifiers(X_train_esm, X_test_esm, y_train, y_test, "ESM-2")
+                    esm_metrics = train_all_classifiers(X_train_esm, X_test_esm, y_train, y_test, "ESM-2", fold_idx)
                     fold_metrics.extend(esm_metrics)
         
         # Model 1B: Handcrafted features
@@ -634,12 +651,12 @@ def main():
         X_test_handcraft = data['X_test_handcraft']
         
         if args.classifier:
-            metrics = train_and_evaluate(X_train_handcraft, X_test_handcraft, y_train, y_test, args.classifier)
+            metrics = train_and_evaluate(X_train_handcraft, X_test_handcraft, y_train, y_test, args.classifier, fold_idx, "handcrafted")
             if metrics:
                 metrics['feature_type'] = 'Handcrafted'
                 fold_metrics.append(metrics)
         else:
-            handcraft_metrics = train_all_classifiers(X_train_handcraft, X_test_handcraft, y_train, y_test, "Handcrafted")
+            handcraft_metrics = train_all_classifiers(X_train_handcraft, X_test_handcraft, y_train, y_test, "Handcrafted", fold_idx)
             fold_metrics.extend(handcraft_metrics)
         
         all_metrics_by_fold.append(fold_metrics)

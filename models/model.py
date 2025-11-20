@@ -56,6 +56,8 @@ ESM_CACHE_PATH = CACHE_DIR / "esm_embeddings.pkl"
 RESULTS_PATH = PROJECT_ROOT / "model2_results.txt"
 PLOT_DIR = PROJECT_ROOT / "plot"
 PLOT_DIR.mkdir(exist_ok=True)
+CHECKPOINTS_DIR = PROJECT_ROOT / "checkpoints" / "model2"
+CHECKPOINTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # ============================================================================
@@ -340,6 +342,7 @@ def train_model(
     device: torch.device,
     patience: int = 5,
     model_type: str = "2A",
+    fold_idx: int = None,
 ) -> Dict:
     """Train the model with early stopping."""
     criterion = nn.BCELoss()
@@ -419,7 +422,8 @@ def train_model(
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
             patience_counter = 0
-            torch.save(model.state_dict(), f'best_model2{model_type}.pth')
+            temp_checkpoint = f'best_model2{model_type}.pth'
+            torch.save(model.state_dict(), temp_checkpoint)
         else:
             patience_counter += 1
         
@@ -428,8 +432,14 @@ def train_model(
         
         if patience_counter >= patience:
             print(f"  Early stopping at epoch {epoch+1}")
-            model.load_state_dict(torch.load(f'best_model2{model_type}.pth'))
+            model.load_state_dict(torch.load(temp_checkpoint))
             break
+    
+    # Save final checkpoint
+    if fold_idx is not None:
+        checkpoint_path = CHECKPOINTS_DIR / f"fold_{fold_idx}_Model2{model_type}.pth"
+        torch.save(model.state_dict(), checkpoint_path)
+        print(f"  ✓ Saved checkpoint: {checkpoint_path.name}")
     
     return {
         'train_losses': train_losses,
@@ -815,7 +825,7 @@ def main():
         model2a = Model2A_ImprovedMLP(input_dim=X_train_pair.shape[1])
         model2a.to(device)
         
-        training_info = train_model(model2a, train_loader, val_loader, args.epochs, args.learning_rate, device, args.patience, "2A")
+        training_info = train_model(model2a, train_loader, val_loader, args.epochs, args.learning_rate, device, args.patience, "2A", fold_idx)
         metrics2a = evaluate_model(model2a, test_loader, device, "2A")
         fold_metrics.append({'model_name': 'Model 2A (Improved MLP)', **metrics2a})
         
@@ -842,7 +852,7 @@ def main():
         model2b = Model2B_SiameseMLP(protein_emb_dim=train_emb_a.shape[1])
         model2b.to(device)
         
-        training_info = train_model(model2b, train_loader, val_loader, args.epochs, args.learning_rate, device, args.patience, "2B")
+        training_info = train_model(model2b, train_loader, val_loader, args.epochs, args.learning_rate, device, args.patience, "2B", fold_idx)
         metrics2b = evaluate_model(model2b, test_loader, device, "2B")
         fold_metrics.append({'model_name': 'Model 2B (Siamese MLP)', **metrics2b})
         
@@ -857,7 +867,7 @@ def main():
         model2c = Model2C_TransformerClassifier(protein_emb_dim=train_emb_a.shape[1])
         model2c.to(device)
         
-        training_info = train_model(model2c, train_loader, val_loader, args.epochs, args.learning_rate, device, args.patience, "2C")
+        training_info = train_model(model2c, train_loader, val_loader, args.epochs, args.learning_rate, device, args.patience, "2C", fold_idx)
         metrics2c = evaluate_model(model2c, test_loader, device, "2C")
         fold_metrics.append({'model_name': 'Model 2C (Transformer)', **metrics2c})
         

@@ -1,0 +1,16 @@
+{
+  "timestamp": "2025-11-20T10:50:10.948707",
+  "positive_file": "ppi_human_interactions.fasta",
+  "negative_file": "ppi_negative_interactions.fasta",
+  "n_folds": 3,
+  "seed": 42,
+  "split_strategy": "protein_disjoint",
+  "split_description": "Proteins are split into folds first, then pairs are assigned based on protein membership. No protein appears in both train and test sets within any fold. This prevents transductive leakage and tests true generalization to unseen proteins.",
+  "n_total": 4642,
+  "n_positive": 2451,
+  "n_negative": 2191,
+  "n_unique_proteins": 916,
+  "handcrafted_feature_dim": 100,
+  "esm2_available": true,
+  "esm2_feature_dim": 5120
+}

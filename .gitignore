@@ -1,0 +1,70 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# PyTorch / ML
+*.pth
+*.pt
+*.ckpt
+*.h5
+*.hdf5
+
+# Data files (large)
+*.pkl
+*.pickle
+*.npy
+*.npz
+cache/
+*.fasta.bak
+
+# Results and outputs (optional - uncomment if you don't want to track results)
+# model*_results.txt
+# plot/*.png
+# curated_data/
+
+# Environment files
+.env
+.conda/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+

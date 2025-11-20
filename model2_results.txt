@@ -1,0 +1,47 @@
+
+======================================================================
+Run timestamp (UTC): 2025-11-20T14:16:25.149025
+3-Fold Cross-Validation Results
+Number of folds: 3
+Training parameters:
+  Learning rate: 0.001
+  Batch size: 64
+  Epochs: 20
+  Early stopping patience: 5
+  Device: cpu
+  Seed: 18
+
+Dataset info:
+  Train samples: 1978 (1007 pos, 971 neg)
+  Test samples:  569 (319 pos, 250 neg)
+  Seed: 42
+
+AGGREGATED RESULTS (Mean ± Std across folds):
+
+Model 2A (Improved MLP):
+  Accuracy:   0.7905 ± 0.0344
+  Precision:  0.8516 ± 0.0377
+  Recall:     0.7159 ± 0.0458
+  F1-Score:   0.7774 ± 0.0390
+  ROC-AUC:    0.8510 ± 0.0389
+  PR-AUC:     0.8876 ± 0.0210
+
+
+Model 2B (Siamese MLP):
+  Accuracy:   0.8053 ± 0.0247
+  Precision:  0.8348 ± 0.0258
+  Recall:     0.7710 ± 0.0400
+  F1-Score:   0.8015 ± 0.0329
+  ROC-AUC:    0.8794 ± 0.0310
+  PR-AUC:     0.8844 ± 0.0361
+
+
+Model 2C (Transformer):
+  Accuracy:   0.7171 ± 0.0730
+  Precision:  0.7642 ± 0.1449
+  Recall:     0.6619 ± 0.1247
+  F1-Score:   0.6994 ± 0.0998
+  ROC-AUC:    0.7925 ± 0.0830
+  PR-AUC:     0.8263 ± 0.1016
+
+======================================================================

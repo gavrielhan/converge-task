@@ -1,0 +1,15 @@
+name: converge
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+    - numpy>=1.21.0
+    - scikit-learn>=1.0.0
+    - torch>=1.9.0
+    - transformers>=4.20.0
+    - biopython>=1.83
+    - scipy>=1.8.0
+

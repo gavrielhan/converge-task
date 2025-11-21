@@ -1,0 +1,110 @@
+================================================================================
+TESTING ENSEMBLE METHOD: LightGBM + Model2B Fallback
+================================================================================
+
+✓ Found 3 folds
+
+────────────────────────────────────────────────────────────────────────────────
+FOLD 0
+────────────────────────────────────────────────────────────────────────────────
+  Test samples: 569
+  ✓ Models loaded
+
+  LightGBM only:
+    ROC-AUC: 0.8754
+    Accuracy: 0.7891
+
+  Model2B only:
+    ROC-AUC: 0.8661
+    Accuracy: 0.7768
+
+  Ensemble (LightGBM + Model2B fallback):
+    Low confidence samples: 18/569 (3.2%)
+    Threshold 0.55: ROC-AUC 0.8740 (Model2B used: 18/569)
+    Low confidence samples: 32/569 (5.6%)
+    Threshold 0.60: ROC-AUC 0.8742 (Model2B used: 32/569)
+    Low confidence samples: 50/569 (8.8%)
+    Threshold 0.65: ROC-AUC 0.8706 (Model2B used: 50/569)
+    Low confidence samples: 74/569 (13.0%)
+    Threshold 0.70: ROC-AUC 0.8666 (Model2B used: 74/569)
+    Low confidence samples: 90/569 (15.8%)
+    Threshold 0.75: ROC-AUC 0.8681 (Model2B used: 90/569)
+
+────────────────────────────────────────────────────────────────────────────────
+FOLD 1
+────────────────────────────────────────────────────────────────────────────────
+  Test samples: 503
+  ✓ Models loaded
+
+  LightGBM only:
+    ROC-AUC: 0.9096
+    Accuracy: 0.8211
+
+  Model2B only:
+    ROC-AUC: 0.9223
+    Accuracy: 0.8370
+
+  Ensemble (LightGBM + Model2B fallback):
+    Low confidence samples: 6/503 (1.2%)
+    Threshold 0.55: ROC-AUC 0.9074 (Model2B used: 6/503)
+    Low confidence samples: 18/503 (3.6%)
+    Threshold 0.60: ROC-AUC 0.9026 (Model2B used: 18/503)
+    Low confidence samples: 26/503 (5.2%)
+    Threshold 0.65: ROC-AUC 0.9020 (Model2B used: 26/503)
+    Low confidence samples: 39/503 (7.8%)
+    Threshold 0.70: ROC-AUC 0.9015 (Model2B used: 39/503)
+    Low confidence samples: 56/503 (11.1%)
+    Threshold 0.75: ROC-AUC 0.9038 (Model2B used: 56/503)
+
+────────────────────────────────────────────────────────────────────────────────
+FOLD 2
+────────────────────────────────────────────────────────────────────────────────
+  Test samples: 460
+  ✓ Models loaded
+
+  LightGBM only:
+    ROC-AUC: 0.8733
+    Accuracy: 0.7804
+
+  Model2B only:
+    ROC-AUC: 0.8500
+    Accuracy: 0.8022
+
+  Ensemble (LightGBM + Model2B fallback):
+    Low confidence samples: 13/460 (2.8%)
+    Threshold 0.55: ROC-AUC 0.8688 (Model2B used: 13/460)
+    Low confidence samples: 23/460 (5.0%)
+    Threshold 0.60: ROC-AUC 0.8691 (Model2B used: 23/460)
+    Low confidence samples: 38/460 (8.3%)
+    Threshold 0.65: ROC-AUC 0.8672 (Model2B used: 38/460)
+    Low confidence samples: 50/460 (10.9%)
+    Threshold 0.70: ROC-AUC 0.8654 (Model2B used: 50/460)
+    Low confidence samples: 66/460 (14.3%)
+    Threshold 0.75: ROC-AUC 0.8622 (Model2B used: 66/460)
+
+================================================================================
+AGGREGATED RESULTS
+================================================================================
+
+LightGBM only:
+  ROC-AUC: 0.8861 ± 0.0166
+
+Model2B only:
+  ROC-AUC: 0.8794 ± 0.0310
+
+Ensemble (LightGBM + Model2B fallback):
+  Threshold 0.55: ROC-AUC 0.8834 ± 0.0171 (Δ -0.0027)
+  Threshold 0.60: ROC-AUC 0.8820 ± 0.0148 (Δ -0.0041)
+  Threshold 0.65: ROC-AUC 0.8799 ± 0.0156 (Δ -0.0061)
+  Threshold 0.70: ROC-AUC 0.8778 ± 0.0168 (Δ -0.0083)
+  Threshold 0.75: ROC-AUC 0.8780 ± 0.0184 (Δ -0.0080)
+
+================================================================================
+BEST ENSEMBLE CONFIGURATION
+================================================================================
+Threshold: 0.55
+ROC-AUC: 0.8834
+Improvement over LightGBM only: -0.0027
+
+✗ Ensemble method does not improve performance.
+  LightGBM alone is sufficient for this task.

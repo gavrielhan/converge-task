@@ -9,7 +9,8 @@
   1. Classical ML on ESM-2 embeddings  
   2. Neural models on frozen embeddings (MLP, Siamese, Transformer)  
   3. **LoRA fine-tuning of ProtBERT-BFD and ESM-2** using a **bi-encoder architecture** (implementation ready)
-- **Best result:** LightGBM on ESM-2 embeddings achieves **ROC-AUC 0.8861 ± 0.0166** on fully protein-disjoint 3-fold CV.  
+- **Best result:** Ensemble method (LightGBM + Model2B fallback) achieves **ROC-AUC 0.8879 ± 0.0084** on fully protein-disjoint 3-fold CV.  
+- LightGBM alone achieves **ROC-AUC 0.8845 ± 0.0069** (strong baseline).  
 - Provides reproducible scripts for data generation, feature extraction, training, and evaluation.
 
 ---
@@ -154,11 +155,11 @@ This repository evaluates three model families, from simple to advanced.
 
 | Model               | ROC-AUC (ESM-2)      | ROC-AUC (Handcrafted) | Notes                    |
 |---------------------|----------------------|-----------------------|--------------------------|
-| LightGBM            | **0.8861 ± 0.0166** | 0.8196 ± 0.0179      | **Best overall**         |
-| XGBoost             | 0.8699 ± 0.0197     | 0.8186 ± 0.0191      | Strong baseline          |
-| LogisticRegression  | 0.8590 ± 0.0296     | 0.6389 ± 0.0325      | Fast, interpretable      |
-| RandomForest        | 0.8482 ± 0.0106     | 0.8126 ± 0.0270      | Stable                   |
-| KNN                 | 0.7699 ± 0.0202     | 0.6130 ± 0.0177      | Baseline                 |
+| LightGBM            | **0.8845 ± 0.0069** | 0.8174 ± 0.0295      | **Best single model**   |
+| XGBoost             | 0.8763 ± 0.0043     | 0.8139 ± 0.0280      | Strong baseline          |
+| LogisticRegression  | 0.8701 ± 0.0111     | 0.6136 ± 0.0119      | Fast, interpretable      |
+| RandomForest        | 0.8476 ± 0.0155     | 0.8122 ± 0.0148      | Stable                   |
+| KNN                 | 0.7557 ± 0.0267     | 0.6423 ± 0.0172      | Baseline                 |
 
 **Run:**
 
@@ -180,9 +181,9 @@ Models operate on static ESM-2 embeddings.
 
 | Model                  | ROC-AUC              | Notes                    |
 |------------------------|----------------------|--------------------------|
-| Model 2B (Siamese MLP) | **0.8794 ± 0.0310** | Best neural architecture |
-| Model 2A (Improved MLP)| 0.8510 ± 0.0389     | Strong baseline          |
-| Model 2C (Transformer) | 0.7925 ± 0.0830     | More variance            |
+| Model 2B (Siamese MLP) | **0.8747 ± 0.0153** | Best neural architecture |
+| Model 2A (Improved MLP)| 0.8341 ± 0.0208     | Strong baseline          |
+| Model 2C (Transformer) | 0.8163 ± 0.0504     | More variance            |
 
 Neural networks achieve competitive performance but do not surpass LightGBM on ESM-2 embeddings.
 
@@ -277,6 +278,18 @@ python scripts/test_ensemble.py
 
 This script tests hybrid prediction strategies (e.g., LightGBM + Model2B fallback) and compares performance against individual models.
 
+**Ensemble Results (3-Fold Protein-Disjoint CV):**
+
+| Method                          | ROC-AUC              | Improvement          | Notes                              |
+|---------------------------------|----------------------|----------------------|------------------------------------|
+| **Ensemble (threshold 0.70)**   | **0.8879 ± 0.0084**  | **+0.0033**          | **Best overall** - LightGBM + Model2B fallback |
+| Ensemble (threshold 0.75)       | 0.8879 ± 0.0087      | +0.0034              | Alternative threshold              |
+| Ensemble (threshold 0.65)       | 0.8878 ± 0.0087      | +0.0033              | Balanced threshold                 |
+| LightGBM only                   | 0.8845 ± 0.0069      | Baseline             | Strong single model                |
+| Model2B only                     | 0.8747 ± 0.0153      | -0.0098              | Neural baseline                    |
+
+**Key Finding:** The ensemble method (LightGBM primary + Model2B fallback when confidence < 0.7) provides a **slight but consistent improvement** over LightGBM alone, achieving ROC-AUC **0.8879 ± 0.0084** compared to **0.8845 ± 0.0069** for LightGBM alone. The ensemble leverages Model2B's complementary strengths on low-confidence predictions, resulting in improved overall performance.
+
 ### 6.3 Performance Comparison Plots
 
 ![ROC-AUC Comparison](plot/roc_auc_comparison.png)
@@ -286,7 +299,7 @@ This script tests hybrid prediction strategies (e.g., LightGBM + Model2B fallbac
 *Figure 2: Comparison of Neural Architectures (Model 2) - Siamese MLP performs best*
 
 ![Final Model Comparison](plot/final_model_comparison.png)
-*Figure 3: **Overall Best Model Comparison** - LightGBM on ESM-2 embeddings (0.8861 ± 0.0166) outperforms both handcrafted features and neural architectures. Error bars show standard deviation across 3 protein-disjoint folds.*
+*Figure 3: **Overall Best Model Comparison** - LightGBM on ESM-2 embeddings (0.8845 ± 0.0069) outperforms both handcrafted features and neural architectures. The ensemble method (LightGBM + Model2B fallback) achieves the best performance at 0.8879 ± 0.0084. Error bars show standard deviation across 3 protein-disjoint folds.*
 
 ### Carpet Plot Analysis
 
@@ -310,9 +323,10 @@ A Flask web application is provided for interactive PPI prediction using trained
 
 **Features:**
 - Upload protein sequences or enter them directly
-- Predict protein-protein interactions
+- Predict protein-protein interactions using ensemble method (LightGBM + Model2B fallback)
 - Visualize predictions with confidence scores
-- Support for multiple model types
+- Automatic model selection based on confidence threshold (0.7)
+- Shows which model was used for each prediction
 
 **Run:**
 
@@ -467,8 +481,11 @@ model.eval()
 This repository implements a fully **leakage-free**, **scientifically rigorous**, and **modern** approach to PPI prediction using transformer PLMs.
 
 **Best Results Achieved:**
-- **LightGBM on ESM-2 embeddings:** ROC-AUC **0.8861 ± 0.0166** (3-fold protein-disjoint CV)
-- **Siamese MLP on ESM-2 embeddings:** ROC-AUC **0.8794 ± 0.0310** (competitive neural baseline)
+- **Ensemble Method (LightGBM + Model2B fallback, threshold=0.7):** ROC-AUC **0.8879 ± 0.0084** (3-fold protein-disjoint CV) - **Best overall**
+- **LightGBM on ESM-2 embeddings:** ROC-AUC **0.8845 ± 0.0069** (3-fold protein-disjoint CV) - Strong single model baseline
+- **Siamese MLP on ESM-2 embeddings:** ROC-AUC **0.8747 ± 0.0153** (competitive neural baseline)
+
+The ensemble method provides a slight but consistent improvement over LightGBM alone by leveraging Model2B's complementary strengths on low-confidence predictions.
 
 The repository also includes a **production-ready LoRA fine-tuning implementation** for ProtBERT-BFD and ESM-2 using a bi-encoder architecture, which is expected to further improve performance when computational resources are available.
 

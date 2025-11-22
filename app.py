@@ -2,14 +2,17 @@
 """
 PPI Prediction Web App
 
-A simple Flask web application for predicting protein-protein interactions
-using the trained LightGBM model on ESM-2 embeddings.
+A Flask web application for predicting protein-protein interactions
+using an ensemble method: LightGBM + Model2B fallback.
+Uses Model2B when LightGBM confidence < 0.7 threshold.
 """
 
 from flask import Flask, render_template, request, jsonify
 from pathlib import Path
 import numpy as np
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 import joblib
 import requests
 from io import StringIO
@@ -25,21 +28,69 @@ except ImportError:
 app = Flask(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-CHECKPOINTS_DIR = PROJECT_ROOT / "checkpoints" / "model1"
+CHECKPOINTS_DIR_MODEL1 = PROJECT_ROOT / "checkpoints" / "model1"
+CHECKPOINTS_DIR_MODEL2 = PROJECT_ROOT / "checkpoints" / "model2"
 
-# Global variables for model and tokenizer
-model = None
+# Global variables for models and tokenizer
+lgbm_model = None
+model2b = None
 tokenizer = None
 esm_model = None
+device = None
+CONFIDENCE_THRESHOLD = 0.7  # Use Model2B when LightGBM confidence < 0.7
+
+
+# Model2B architecture (must match training)
+class Model2B_SiameseMLP(nn.Module):
+    """Model 2B: Siamese MLP architecture."""
+    
+    def __init__(self, protein_emb_dim: int = 1280):
+        super().__init__()
+        # Siamese branches (shared weights)
+        self.protein_fc1 = nn.Linear(protein_emb_dim, 1024)
+        self.protein_fc2 = nn.Linear(1024, 256)
+        
+        # Pair combination
+        pair_dim = 256 * 4  # concat, diff, product
+        self.pair_fc1 = nn.Linear(pair_dim, 256)
+        self.pair_fc2 = nn.Linear(256, 64)
+        self.pair_fc3 = nn.Linear(64, 1)
+        self.sigmoid = nn.Sigmoid()
+    
+    def forward(self, emb_a, emb_b):
+        # Process each protein independently
+        h_a = self.protein_fc1(emb_a)
+        h_a = F.gelu(h_a)
+        h_a = self.protein_fc2(h_a)
+        h_a = F.gelu(h_a)
+        
+        h_b = self.protein_fc1(emb_b)
+        h_b = F.gelu(h_b)
+        h_b = self.protein_fc2(h_b)
+        h_b = F.gelu(h_b)
+        
+        # Combine pair features
+        diff = torch.abs(h_a - h_b)
+        product = h_a * h_b
+        pair = torch.cat([h_a, h_b, diff, product], dim=1)
+        
+        # Final layers
+        x = self.pair_fc1(pair)
+        x = F.gelu(x)
+        x = self.pair_fc2(x)
+        x = F.gelu(x)
+        x = self.pair_fc3(x)
+        x = self.sigmoid(x)
+        return x
 
 def load_lightgbm_model():
     """Load the best LightGBM model from checkpoints."""
     # Try to find any LightGBM checkpoint
-    lightgbm_checkpoints = list(CHECKPOINTS_DIR.glob("fold_*_esm2_LightGBM.pkl"))
+    lightgbm_checkpoints = list(CHECKPOINTS_DIR_MODEL1.glob("fold_*_esm2_LightGBM.pkl"))
     
     if not lightgbm_checkpoints:
         raise FileNotFoundError(
-            f"No LightGBM checkpoints found in {CHECKPOINTS_DIR}. "
+            f"No LightGBM checkpoints found in {CHECKPOINTS_DIR_MODEL1}. "
             "Please run benchmark.py first to train the model."
         )
     
@@ -49,7 +100,30 @@ def load_lightgbm_model():
     return joblib.load(checkpoint_path)
 
 
-def load_esm2_model():
+def load_model2b(device):
+    """Load Model2B from checkpoints."""
+    # Try to find any Model2B checkpoint
+    model2b_checkpoints = list(CHECKPOINTS_DIR_MODEL2.glob("fold_*_Model22B.pth"))
+    
+    if not model2b_checkpoints:
+        raise FileNotFoundError(
+            f"No Model2B checkpoints found in {CHECKPOINTS_DIR_MODEL2}. "
+            "Please train Model2B first."
+        )
+    
+    # Load the first checkpoint
+    checkpoint_path = model2b_checkpoints[0]
+    print(f"Loading Model2B from: {checkpoint_path}")
+    
+    model2b = Model2B_SiameseMLP(protein_emb_dim=1280)
+    model2b.load_state_dict(torch.load(checkpoint_path, map_location=device))
+    model2b = model2b.to(device)
+    model2b.eval()
+    
+    return model2b
+
+
+def load_esm2_model(device):
     """Load ESM-2 model and tokenizer."""
     if not TRANSFORMERS_AVAILABLE:
         raise ImportError("transformers library not available")
@@ -61,7 +135,6 @@ def load_esm2_model():
     model = AutoModel.from_pretrained(model_name)
     
     # Move to GPU if available
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
     model.eval()
     
@@ -71,8 +144,6 @@ def load_esm2_model():
 
 def get_esm2_embedding(sequence: str) -> np.ndarray:
     """Get ESM-2 embedding for a protein sequence."""
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
     # Tokenize
     inputs = tokenizer(sequence, return_tensors="pt", padding=True, truncation=True, max_length=1024)
     inputs = {k: v.to(device) for k, v in inputs.items()}
@@ -175,18 +246,47 @@ def predict():
         emb_a = get_esm2_embedding(sequence_a)
         emb_b = get_esm2_embedding(sequence_b)
         
-        # Create pair features
+        # Create pair features for LightGBM
         pair_features = create_pair_features(emb_a, emb_b)
         
-        # Predict
-        prediction_proba = model.predict_proba(pair_features)[0]
-        prediction = int(model.predict(pair_features)[0])
+        # Get LightGBM prediction
+        lgbm_proba = lgbm_model.predict_proba(pair_features)[0]
+        lgbm_pred = int(lgbm_model.predict(pair_features)[0])
+        lgbm_confidence = float(np.max(lgbm_proba))
+        
+        # Determine which model to use
+        model_used = 'LightGBM'
+        prediction_proba = lgbm_proba
+        prediction = lgbm_pred
+        
+        # Use Model2B if LightGBM confidence is below threshold
+        if lgbm_confidence < CONFIDENCE_THRESHOLD:
+            model_used = 'Model2B'
+            print(f"  LightGBM confidence ({lgbm_confidence:.3f}) < threshold ({CONFIDENCE_THRESHOLD}), using Model2B...")
+            
+            # Prepare embeddings for Model2B
+            emb_a_tensor = torch.FloatTensor(emb_a).unsqueeze(0).to(device)
+            emb_b_tensor = torch.FloatTensor(emb_b).unsqueeze(0).to(device)
+            
+            # Predict with Model2B
+            with torch.no_grad():
+                model2b_output = model2b(emb_a_tensor, emb_b_tensor)
+                model2b_prob_interact = float(model2b_output.cpu().numpy().flatten()[0])
+            
+            # Format Model2B probabilities
+            prediction_proba = np.array([1 - model2b_prob_interact, model2b_prob_interact])
+            prediction = 1 if model2b_prob_interact > 0.5 else 0
+        else:
+            print(f"  LightGBM confidence ({lgbm_confidence:.3f}) >= threshold ({CONFIDENCE_THRESHOLD}), using LightGBM")
+        
         confidence = float(prediction_proba[prediction])
         
         # Format result
         result = {
             'prediction': 'YES' if prediction == 1 else 'NO',
             'confidence': round(confidence * 100, 2),
+            'model_used': model_used,
+            'lgbm_confidence': round(lgbm_confidence * 100, 2),
             'protein_a': {
                 'name': name_a,
                 'length': len(sequence_a)
@@ -208,22 +308,39 @@ def predict():
 if __name__ == '__main__':
     print("="*80)
     print("PPI PREDICTION WEB APP")
+    print("Using Ensemble: LightGBM + Model2B Fallback (threshold=0.7)")
     print("="*80)
     
-    # Load models
-    try:
-        model = load_lightgbm_model()
-        print("✓ LightGBM model loaded (ROC-AUC: 0.8861)")
-    except Exception as e:
-        print(f"✗ Error loading LightGBM model: {e}")
-        exit(1)
+    # Set device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
     
+    # Load ESM-2 model first (needed for embeddings)
     try:
-        tokenizer, esm_model = load_esm2_model()
+        tokenizer, esm_model = load_esm2_model(device)
         print("✓ ESM-2 model loaded")
     except Exception as e:
         print(f"✗ Error loading ESM-2 model: {e}")
         exit(1)
+    
+    # Load LightGBM model
+    try:
+        lgbm_model = load_lightgbm_model()
+        print("✓ LightGBM model loaded")
+    except Exception as e:
+        print(f"✗ Error loading LightGBM model: {e}")
+        exit(1)
+    
+    # Load Model2B model
+    try:
+        model2b = load_model2b(device)
+        print("✓ Model2B loaded")
+    except Exception as e:
+        print(f"✗ Error loading Model2B: {e}")
+        exit(1)
+    
+    print(f"\n✓ Ensemble ready: LightGBM (primary) + Model2B (fallback when confidence < {CONFIDENCE_THRESHOLD})")
+    print(f"  Expected performance: ROC-AUC ~0.8879")
     
     print("\n" + "="*80)
     print("Starting Flask server...")

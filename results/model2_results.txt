@@ -1,6 +1,6 @@
 
 ======================================================================
-Run timestamp (UTC): 2025-11-20T23:13:25.795033
+Run timestamp (UTC): 2025-11-22T20:38:44.489881
 3-Fold Cross-Validation Results
 Number of folds: 3
 Training parameters:
@@ -12,36 +12,36 @@ Training parameters:
   Seed: 18
 
 Dataset info:
-  Train samples: 1978 (1007 pos, 971 neg)
-  Test samples:  569 (319 pos, 250 neg)
+  Train samples: 1993 (1002 pos, 991 neg)
+  Test samples:  467 (232 pos, 235 neg)
   Seed: 42
 
 AGGREGATED RESULTS (Mean ± Std across folds):
 
 Model 2A (Improved MLP):
-  Accuracy:   0.7905 ± 0.0344
-  Precision:  0.8516 ± 0.0377
-  Recall:     0.7159 ± 0.0458
-  F1-Score:   0.7774 ± 0.0390
-  ROC-AUC:    0.8510 ± 0.0389
-  PR-AUC:     0.8876 ± 0.0210
+  Accuracy:   0.7619 ± 0.0175
+  Precision:  0.9028 ± 0.0381
+  Recall:     0.5953 ± 0.0592
+  F1-Score:   0.7145 ± 0.0380
+  ROC-AUC:    0.8341 ± 0.0208
+  PR-AUC:     0.8727 ± 0.0117
 
 
 Model 2B (Siamese MLP):
-  Accuracy:   0.8053 ± 0.0247
-  Precision:  0.8348 ± 0.0258
-  Recall:     0.7710 ± 0.0400
-  F1-Score:   0.8015 ± 0.0329
-  ROC-AUC:    0.8794 ± 0.0310
-  PR-AUC:     0.8844 ± 0.0361
+  Accuracy:   0.7851 ± 0.0275
+  Precision:  0.8460 ± 0.0217
+  Recall:     0.7067 ± 0.0910
+  F1-Score:   0.7657 ± 0.0435
+  ROC-AUC:    0.8747 ± 0.0153
+  PR-AUC:     0.8938 ± 0.0144
 
 
 Model 2C (Transformer):
-  Accuracy:   0.7171 ± 0.0730
-  Precision:  0.7642 ± 0.1449
-  Recall:     0.6619 ± 0.1247
-  F1-Score:   0.6994 ± 0.0998
-  ROC-AUC:    0.7925 ± 0.0830
-  PR-AUC:     0.8263 ± 0.1016
+  Accuracy:   0.7655 ± 0.0342
+  Precision:  0.8314 ± 0.0492
+  Recall:     0.6783 ± 0.0645
+  F1-Score:   0.7442 ± 0.0389
+  ROC-AUC:    0.8163 ± 0.0504
+  PR-AUC:     0.8592 ± 0.0347
 
 ======================================================================

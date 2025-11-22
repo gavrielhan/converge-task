@@ -123,6 +123,34 @@ def parse_fasta(path: Path) -> List[Tuple[str, str, str, str]]:
     return pairs
 
 
+def deduplicate_pairs(pairs: List[Tuple[str, str, str, str]]) -> Tuple[List[Tuple[str, str, str, str]], int]:
+    """
+    Remove duplicate pairs based on canonical (sorted) protein IDs.
+    Keeps the first occurrence of each unique pair.
+    
+    Args:
+        pairs: List of (id_a, id_b, seq_a, seq_b) tuples
+        
+    Returns:
+        Tuple of (deduplicated_pairs, num_duplicates_removed)
+    """
+    seen = set()
+    deduplicated = []
+    duplicates_removed = 0
+    
+    for id_a, id_b, seq_a, seq_b in pairs:
+        # Create canonical pair (sorted IDs)
+        canonical = tuple(sorted([id_a, id_b]))
+        
+        if canonical not in seen:
+            seen.add(canonical)
+            deduplicated.append((id_a, id_b, seq_a, seq_b))
+        else:
+            duplicates_removed += 1
+    
+    return deduplicated, duplicates_removed
+
+
 def extract_handcrafted_features(seq: str) -> np.ndarray:
     """
     Extract handcrafted features from a protein sequence with SEGMENTED COMPOSITION.
@@ -472,6 +500,18 @@ def main():
     
     negative_pairs = parse_fasta(args.negative)
     print(f"   ✓ Loaded {len(negative_pairs)} negative pairs")
+    
+    # Deduplicate pairs (remove duplicate pairs based on canonical protein IDs)
+    print(f"\n   Removing duplicate pairs...")
+    positive_pairs, pos_duplicates = deduplicate_pairs(positive_pairs)
+    negative_pairs, neg_duplicates = deduplicate_pairs(negative_pairs)
+    
+    if pos_duplicates > 0 or neg_duplicates > 0:
+        print(f"   ✓ Removed {pos_duplicates} duplicate positive pairs")
+        print(f"   ✓ Removed {neg_duplicates} duplicate negative pairs")
+        print(f"   ✓ Remaining: {len(positive_pairs)} unique positive, {len(negative_pairs)} unique negative")
+    else:
+        print(f"   ✓ No duplicates found")
     
     # Combine and create labels
     all_pairs = positive_pairs + negative_pairs

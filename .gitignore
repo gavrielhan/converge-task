@@ -50,8 +50,12 @@ ENV/
 *.npy
 *.npz
 cache/
-checkpoints/
 *.fasta.bak
+
+# Exceptions: include checkpoints directory
+!checkpoints/
+!checkpoints/**/*.pkl
+!checkpoints/**/*.pth
 
 # Results and outputs (optional - uncomment if you don't want to track results)
 # model*_results.txt

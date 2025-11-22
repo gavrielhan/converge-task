@@ -62,9 +62,33 @@ We recommend **3-fold** CV for PPI datasets of ~2–3K pairs.
 
 ---
 
-# 📦 3. Dataset Construction
+# 📦 3. Quick Start
 
-### 3.1 Inputs
+**Complete workflow:**
+
+```bash
+# 1. Generate negative pairs
+python scripts/generate_negative_pairs.py --seed 42
+
+# 2. Prepare dataset with 3-fold CV splits
+python scripts/prepare_dataset.py --n-folds 3 --device cuda
+
+# 3. Train Model 1 (Classical ML)
+python models/benchmark.py
+
+# 4. Train Model 2 (Neural Networks)
+python models/model.py --epochs 20 --device cuda
+
+# 5. Generate comparison plots
+python scripts/plot_final_comparison.py
+python scripts/plot_carpet.py
+```
+
+---
+
+# 📦 4. Dataset Construction
+
+### 4.1 Inputs
 - `ppi_human_interactions.fasta` — positive pairs  
 - `ppi_negative_interactions.fasta` — random negatives (generated)
 
@@ -74,17 +98,17 @@ Each FASTA line encodes:
 SEQA-SEQB
 ```
 
-### 3.2 Generating Negative Pairs
+### 4.2 Generating Negative Pairs
 Negative pairs are sampled randomly **after removing all positive interactions** and **self-pairs**.
 
 This is safe **only because protein-disjoint splitting eliminates SI leakage**.
 
 Command:
 ```bash
-python generate_negative_pairs.py --seed 42
+python scripts/generate_negative_pairs.py --seed 42
 ```
 
-### 3.3 Preparing Final Folds
+### 4.3 Preparing Final Folds
 
 This script:
 
@@ -97,16 +121,16 @@ This script:
 Run:
 
 ```bash
-python prepare_dataset.py --n-folds 3 --device cuda
+python scripts/prepare_dataset.py --n-folds 3 --device cuda
 ```
 
 ---
 
-# 🏗 4. Modeling Approaches
+# 🏗 5. Modeling Approaches
 
 This repository evaluates three model families, from simple to advanced.
 
-## ⭐ 4.1 Model 1 — Classical ML on embeddings
+## ⭐ 5.1 Model 1 — Classical ML on embeddings
 
 **Features:**
 
@@ -142,7 +166,7 @@ This repository evaluates three model families, from simple to advanced.
 python models/benchmark.py --classifier XGBoost
 ```
 
-## ⭐ 4.2 Model 2 — Neural Architectures on Frozen Embeddings
+## ⭐ 5.2 Model 2 — Neural Architectures on Frozen Embeddings
 
 Models operate on static ESM-2 embeddings.
 
@@ -168,7 +192,7 @@ Neural networks achieve competitive performance but do not surpass LightGBM on E
 python models/model.py --epochs 20 --device cuda
 ```
 
-## ⭐ 4.3 Model 3 — LoRA Fine-Tuned Protein Language Models (Best)
+## ⭐ 5.3 Model 3 — LoRA Fine-Tuned Protein Language Models (Best)
 
 ### ⚡ Key Innovation
 
@@ -219,7 +243,7 @@ python models/lora_model_esm2.py --device cuda --batch-size 4 --n-folds 1
 
 ---
 
-# 📈 5. Final Comparison
+# 📈 6. Final Comparison & Visualization
 
 A script aggregates the top performers from Models 1, 2, and 3 and plots:
 
@@ -230,20 +254,30 @@ A script aggregates the top performers from Models 1, 2, and 3 and plots:
 **Run:**
 
 ```bash
-python plot_final_comparison.py
+python scripts/plot_final_comparison.py
 ```
 
-### 6. Generate Carpet Plot (Error Pattern Analysis)
+### 6.1 Generate Carpet Plot (Error Pattern Analysis)
 
 Creates a carpet plot showing prediction correctness for each test sample across all models and folds. Helps identify complementary errors and ensemble potential.
 
 ```bash
-python plot_carpet.py
+python scripts/plot_carpet.py
 ```
 
-**Output:** `plot/final_model_comparison.png`
+**Output:** `plot/carpet_plot.png` and `plot/model_agreement.png`
 
-### Performance Comparison Plots
+### 6.2 Ensemble Testing
+
+Test ensemble methods that combine multiple models for improved performance:
+
+```bash
+python scripts/test_ensemble.py
+```
+
+This script tests hybrid prediction strategies (e.g., LightGBM + Model2B fallback) and compares performance against individual models.
+
+### 6.3 Performance Comparison Plots
 
 ![ROC-AUC Comparison](plot/roc_auc_comparison.png)
 *Figure 1: Comparison of Classical Classifiers (Model 1) - LightGBM on ESM-2 achieves the best performance*
@@ -270,36 +304,103 @@ python plot_carpet.py
 
 ---
 
-# 🗂 6. Repository Structure
+# 🚀 6. Web Application
+
+A Flask web application is provided for interactive PPI prediction using trained models.
+
+**Features:**
+- Upload protein sequences or enter them directly
+- Predict protein-protein interactions
+- Visualize predictions with confidence scores
+- Support for multiple model types
+
+**Run:**
+
+```bash
+python app.py
+```
+
+Then open your browser to `http://localhost:5001`
+
+**Note:** The web app requires trained models to be available. See the `APP_README.md` file for detailed setup instructions.
+
+---
+
+# 🗂 7. Repository Structure
 
 ```
 converge-task/
-├── Data/
-│   ├── ppi_human_interactions.fasta
-│   ├── ppi_negative_interactions.fasta
+├── ppi_human_interactions.fasta     # Positive PPI pairs
+├── ppi_negative_interactions.fasta  # Negative PPI pairs
 │
-├── prepare_dataset.py               # Protein-disjoint splits + feature extraction
-├── generate_negative_pairs.py       # Balanced negative sampling
-├── plot_final_comparison.py         # Generate final comparison plot
+├── scripts/
+│   ├── prepare_dataset.py           # Protein-disjoint splits + feature extraction
+│   ├── generate_negative_pairs.py   # Balanced negative sampling
+│   ├── plot_final_comparison.py     # Generate final comparison plot
+│   ├── plot_carpet.py               # Generate carpet plot
+│   ├── test_ensemble.py             # Test ensemble methods
+│   └── count_sequences.py           # Count FASTA entries
 │
 ├── models/
 │   ├── benchmark.py                 # Classical ML (Model 1)
 │   ├── model.py                     # Neural nets (Model 2)
 │   ├── lora_model_protbert.py       # LoRA ProtBERT bi-encoder (Model 3a)
-│   ├── lora_model_esm2.py           # LoRA ESM-2 bi-encoder (Model 3b)
+│   ├── lora_model_esm2.py          # LoRA ESM-2 bi-encoder (Model 3b)
 │
-├── Output/
-│   ├── curated_data/                # Prepared folds
-│   ├── cache/                       # Embedding caches
-│   ├── plot/                        # Generated figures
-│   └── *_results.txt                # Detailed logs
+├── curated_data/                    # Prepared folds (protein-disjoint splits)
+│   ├── fold_0/                     # Fold 0 data (train/test splits)
+│   ├── fold_1/                     # Fold 1 data
+│   ├── fold_2/                     # Fold 2 data
+│   └── global_metadata.json        # Dataset metadata
 │
-└── requirements.txt
+├── cache/                           # Embedding caches
+│   ├── esm_embeddings.pkl          # Cached ESM-2 embeddings
+│   └── handcrafted_features.pkl    # Cached handcrafted features
+│
+├── checkpoints/                     # Saved model checkpoints (tracked in git)
+│                                    # Note: Checkpoints are included in repository
+│   ├── model1/                     # Classical ML checkpoints per fold
+│   │   ├── fold_0_esm2_*.pkl      # Fold 0 models
+│   │   ├── fold_1_esm2_*.pkl      # Fold 1 models
+│   │   └── fold_2_esm2_*.pkl      # Fold 2 models
+│   └── model2/                     # Neural network checkpoints per fold
+│       ├── fold_0_Model2*.pth     # Fold 0 models
+│       ├── fold_1_Model2*.pth     # Fold 1 models
+│       └── fold_2_Model2*.pth     # Fold 2 models
+│
+├── plot/                            # Generated figures
+│   ├── roc_auc_comparison.png      # Model 1 comparison
+│   ├── model2_comparison.png       # Model 2 comparison
+│   ├── final_model_comparison.png  # Overall comparison
+│   ├── carpet_plot.png             # Error pattern analysis
+│   └── model_agreement.png         # Model agreement matrix
+│
+├── results/                         # Model evaluation results
+│   ├── model1_results.txt          # Classical ML results
+│   ├── model2_results.txt          # Neural network results
+│   └── ensemble_test_results.txt   # Ensemble method results
+│
+├── scripts/                         # Utility scripts
+│   ├── prepare_dataset.py          # Dataset preparation
+│   ├── generate_negative_pairs.py  # Negative pair generation
+│   ├── plot_final_comparison.py    # Plot generation
+│   ├── plot_carpet.py              # Carpet plot generation
+│   ├── test_ensemble.py            # Ensemble testing
+│   └── count_sequences.py          # Sequence counting
+│
+├── templates/                       # Web app templates
+│   └── index.html                  # Main web interface
+│
+├── app.py                           # Flask web application
+├── APP_README.md                    # Web app documentation
+├── requirements.txt                 # Python dependencies
+├── requirements_app.txt             # Web app dependencies
+└── environment.yml                  # Conda environment file
 ```
 
 ---
 
-# ⚙️ 7. Installation
+# ⚙️ 8. Installation
 
 ```bash
 conda create -n ppi python=3.10 -y
@@ -316,7 +417,30 @@ pip install transformers peft accelerate torch biopython scikit-learn sentencepi
 
 ---
 
-# 🔍 8. Limitations & Future Work
+# 📚 9. Using Trained Models
+
+Trained model checkpoints are saved in the `checkpoints/` directory and are tracked in git. Each model is saved per fold for cross-validation.
+
+**Loading a trained model:**
+
+```python
+import joblib
+import torch
+
+# Load classical ML model
+model = joblib.load('checkpoints/model1/fold_0_esm2_LightGBM.pkl')
+predictions = model.predict(features)
+
+# Load neural network model
+model = Model2B_SiameseMLP(protein_emb_dim=1280)
+model.load_state_dict(torch.load('checkpoints/model2/fold_0_Model22B.pth'))
+model.eval()
+```
+
+
+---
+
+# 🔍 10. Limitations & Future Work
 
 - ⚠️ Negative sampling remains imperfect, but protein-disjoint CV mitigates most issues.
 - Models do not yet incorporate:
@@ -330,7 +454,7 @@ pip install transformers peft accelerate torch biopython scikit-learn sentencepi
 
 ---
 
-# 🧾 9. References
+# 🧾 11. References
 
 - **ESM-2**: Lin et al., *Highly Accurate Protein Structure Prediction Using Transformer Protein Language Models*, 2023
 - **ProtBERT-BFD**: Elnaggar et al., *ProtTrans: Toward Cracking the Language of Life's Code Through Self-Supervised Deep Learning and High Performance Computing*, 2021
@@ -338,7 +462,7 @@ pip install transformers peft accelerate torch biopython scikit-learn sentencepi
 
 ---
 
-# 🏁 10. Summary
+# 🏁 12. Summary
 
 This repository implements a fully **leakage-free**, **scientifically rigorous**, and **modern** approach to PPI prediction using transformer PLMs.
 

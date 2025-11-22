@@ -73,7 +73,9 @@ def _check_xgboost():
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CURATED_DATA_DIR = PROJECT_ROOT / "curated_data"
-RESULTS_PATH = PROJECT_ROOT / "model1_results.txt"
+RESULTS_DIR = PROJECT_ROOT / "results"
+RESULTS_DIR.mkdir(exist_ok=True)
+RESULTS_PATH = RESULTS_DIR / "model1_results.txt"
 PLOT_DIR = PROJECT_ROOT / "plot"
 PLOT_DIR.mkdir(exist_ok=True)
 CHECKPOINTS_DIR = PROJECT_ROOT / "checkpoints" / "model1"

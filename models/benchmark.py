@@ -685,7 +685,7 @@ def main():
         
         # Create ROC-AUC plot with error bars
         if len(all_metrics_by_fold) > 1:  # Only plot if multiple folds
-            plot_path = PLOT_DIR / "roc_auc_comparison.png"
+            plot_path = PLOT_DIR / "model1_comparison.png"
             create_roc_auc_plot(all_metrics_by_fold, plot_path)
         
         # Log results

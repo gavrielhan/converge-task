@@ -292,7 +292,7 @@ This script tests hybrid prediction strategies (e.g., LightGBM + Model2B fallbac
 
 ### 6.3 Performance Comparison Plots
 
-![ROC-AUC Comparison](plot/roc_auc_comparison.png)
+![Model 1 Comparison](plot/model1_comparison.png)
 *Figure 1: Comparison of Classical Classifiers (Model 1) - LightGBM on ESM-2 achieves the best performance*
 
 ![Neural Variants](plot/model2_comparison.png)
@@ -383,7 +383,7 @@ converge-task/
 │       └── fold_2_Model2*.pth     # Fold 2 models
 │
 ├── plot/                            # Generated figures
-│   ├── roc_auc_comparison.png      # Model 1 comparison
+│   ├── model1_comparison.png       # Model 1 comparison
 │   ├── model2_comparison.png       # Model 2 comparison
 │   ├── final_model_comparison.png  # Overall comparison
 │   ├── carpet_plot.png             # Error pattern analysis
